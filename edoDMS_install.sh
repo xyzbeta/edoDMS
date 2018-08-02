@@ -2,7 +2,7 @@
 #=================================================
 #	System Required: CentOS 7+/Debian 8+/Ubuntu 16+
 #	Description: System Operation Tools
-#	Version: 2.0
+#	Version: 2.1
 #	Author: XyzBeta
 #	Blog: https://www.xyzbeta.com
 #=================================================
@@ -14,6 +14,8 @@ Green_font_prefix="\033[32m" && Red_font_prefix="\033[31m" && Yellow_font_prefix
 Info="${Green_font_prefix}[信息]${Font_color_suffix}"
 Error="${Red_font_prefix}[错误]${Font_color_suffix}"
 Tip="${Yellow_font_prefix}[注意]${Font_color_suffix}"
+#调用方法标记文件
+tagfiles="$(pwd)/edoDMS_runtag.txt"
 
 ####################################运维工具基础方法区域###########################
 #判断用户是否具有root 权限
@@ -38,6 +40,19 @@ check_sys(){
 	elif cat /proc/version | grep -q -E -i "centos|redhat|redhat"; then
 		release="centos"
     fi
+}
+
+#标记调用过的方法,实现脚本重新运行时，已经运行成功的方法将不在重新执行。
+function tagFunction(){
+	if [[ "0" == $? ]]; then
+		if [[ $(cat ${tagfiles}) == "" ]]; then 
+			functiontag=1
+		else
+			functiontag=$(cat ${tagfiles})
+		fi
+		((functiontag++))
+		echo ${functiontag} > ${tagfiles}
+	fi
 }
 
 ##########################业务方法区########################
@@ -113,7 +128,14 @@ function installDocker(){
 }
 
 function installEdo(){
-	echo -e -n "${Info}开始设置配置文件,请输入文档系统的下载地址(内网地址为:192.168.1.112:5000):" && read downloadEdo
+	until [[ "Y" == ${downloadEdo_tag} || "y" == ${downloadEdo_tag} ]]
+	do
+	echo -e -n "${Info}开始设置配置文件,请输入文档系统的下载地址(默认地址:192.168.1.112:5000):" && read downloadEdo
+	if [[ "" == ${downloadEdo} ]]; then
+		downloadEdo="192.168.1.112:5000"
+	fi
+	echo -e -n "${Info}系统获取的镜像下载地址是:${downloadEdo},确认[Y/n]:" && read downloadEdo_tag
+	done
 	echo "{\"insecure-registries\":[\"${downloadEdo}\"]}">/etc/docker/daemon.json
 	systemctl restart docker
 	echo -e "${Info}下载docker-compose......"
@@ -135,6 +157,7 @@ function installEdo(){
 #${Info}激活与技术服务:4008-320-399
 #############################################"
 	fi
+	rm -f ${tagfiles}
 }
 
 function stopFirewall(){
@@ -142,13 +165,29 @@ function stopFirewall(){
 		echo -e  "${Tip}防止${release}系统防火墙拦截系统的正常访问,安装时会关闭防火墙,待安装后测试访问正常后,请打开防火墙!"
 		systemctl stop firewalld.service
 		sleep 4
+	elif [[ "${release}" == "ubantu"  ]]; then
+		 echo -e  "${Tip}防止${release}系统防火墙拦截系统的正常访问,安装>时会关闭防火墙,待安装后测试访问正常后,请打开防火墙!"
+		ufw disanble
+		sleep 4
 	fi
 }
 
 #####################业务流程入口##########################
 check_root
 check_sys
+[ ! -f "${tagfiles}" ] && functiontag=1 || functiontag=$(cat ${tagfiles})
+case ${functiontag} in
+1)
 stopFirewall
-updateSource
-installDocker
-installEdo
+tagFunction
+;&
+2)updateSource
+tagFunction
+;&
+3)installDocker
+tagFunction
+;&
+4)installEdo
+;;
+*)echo -e "${Error}${tagfiles}标记文件内容错误，请检查！"
+esac
