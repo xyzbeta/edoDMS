@@ -55,7 +55,7 @@ function check_sys(){
 #脚本升级
 function Update_Sh(){
 	echo -e "${Info}当前文件版本为:${sh_version},开始检查是否存在新版本！"
-	sh_new_version=$(wget --no-check-certificate -qO- "https://github.com/xyzbeta/edoDMS/blob/master/edoDMS_install.sh"|grep 'sh_version="'|awk -F "=" '{print $NF}'|sed 's/\"//g'|head -1)
+	sh_new_version=$(wget --no-check-certificate -qO- "https://raw.githubusercontent.com/xyzbeta/edoDMS/master/edoDMS.sh"|grep 'sh_version="'|awk -F "=" '{print $NF}'|sed 's/\"//g'|head -1)
 	[[ -z ${sh_new_version} ]] && echo -e "文件升级检查,脚本将退出。" && exit 0
 	if [[ ${sh_version} == ${sh_new_version} ]]; then
 		echo -e "${info}发现新版${sh_new_version},是否进行升级。[Y/n]"
