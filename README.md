@@ -12,7 +12,7 @@
 
 
 ## 安装教程
- wget https://github.com/xyzbeta/edoDMS/archive/master.zip && unzip master.zip && cd edoDMS-master && chmod u+x *.sh && ./edoDMS_install.sh
+ wget https://github.com/xyzbeta/edoDMS/archive/master.zip && unzip master.zip && cd edoDMS-master && chmod u+x *.sh && ./edoDMS.sh
 
 ## 相关命令
 
