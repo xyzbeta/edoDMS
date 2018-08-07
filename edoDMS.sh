@@ -62,11 +62,11 @@ function Update_Sh(){
 		 read yn
 		[[ -z ${yn} ]] && yn="y"
 		if [[ ${yn} == [Yy] ]]; then
-			 wget --no-check-certificate -N https://github.com/xyzbeta/edoDMS/archive/master.zip -O /root/ && cd /root/ && unzip -o master.zip && cd edoDMS-master && chmod u+x *.sh
+			 wget --no-check-certificate -N https://raw.githubusercontent.com/xyzbeta/edoDMS/master/edoDMS.sh && chmod u+x *.sh
 		else 
 		 echo -e "${Tip}取消更新!"
 		fi
-		echo && echo -e "${Info}脚本已经更新到最新版本:${sh_new_version}" && echo -e "${Info}请退出当前运行的脚本，并在 /root 路径下重新运行" echo
+		echo && echo -e "${Info}脚本已经更新到最新版本:${sh_new_version},请重新运行本脚本" && echo
 	else
 		echo -e "${Info}当前版本为最新版本。"
 	fi
