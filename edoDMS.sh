@@ -56,17 +56,17 @@ function check_sys(){
 function Update_Sh(){
 	echo -e "${Info}当前文件版本为:${sh_version},开始检查是否存在新版本！"
 	sh_new_version=$(wget --no-check-certificate -qO- "https://raw.githubusercontent.com/xyzbeta/edoDMS/master/edoDMS.sh"|grep 'sh_version="'|awk -F "=" '{print $NF}'|sed 's/\"//g'|head -1)
-	[[ -z ${sh_new_version} ]] && echo -e "文件升级检查,脚本将退出。" && exit 0
-	if [[ ${sh_version} == ${sh_new_version} ]]; then
+	[[ -z ${sh_new_version} ]] && echo -e "文件升级检查失败,脚本将退出。" && exit 0
+	if [[ ! ${sh_version} == ${sh_new_version} ]]; then
 		echo -e "${info}发现新版${sh_new_version},是否进行升级。[Y/n]"
 		 read yn
 		[[ -z ${yn} ]] && yn="y"
 		if [[ ${yn} == [Yy] ]]; then
-			 wget --no-check-certificate -N https://github.com/xyzbeta/edoDMS/archive/master.zip && unzip -o master.zip && cd edoDMS-master && chmod u+x *.sh
+			 wget --no-check-certificate -N https://github.com/xyzbeta/edoDMS/archive/master.zip -O /root/ && cd /root/ && unzip -o master.zip && cd edoDMS-master && chmod u+x *.sh
 		else 
 		 echo -e "${Tip}取消更新!"
 		fi
-		echo -e "${Info}脚本已经更新到最新版本:${sh_new_version}"
+		echo && echo -e "${Info}脚本已经更新到最新版本:${sh_new_version}" && echo -e "${Info}请退出当前运行的脚本，并在 /root 路径下重新运行" echo
 	else
 		echo -e "${Info}当前版本为最新版本。"
 	fi
