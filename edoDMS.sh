@@ -5,7 +5,7 @@ export PATH
 #=================================================
 #	System Required: CentOS 7+/Debian 8+/Ubuntu 16+
 #	Description: System Operation Tools
-#	Version: 2.1.1
+#	Version: 2.1.2
 #	Author: XyzBeta
 #	Blog: https://www.xyzbeta.com
 #=================================================
@@ -22,8 +22,8 @@ tagfiles="$(pwd)/edoDMS_runtag.txt"
 debian_source="/etc/apt/sources.list"
 centos_soure="/etc/yum.repos.d/CentOS-Base.repo"
 sys_date=$(date "+%Y%m%d_%H%M%S")
-docker_version="docker-ce_17.09.0"
-sh_version="2.1.1"
+docker_version="17.09.0"
+sh_version="2.1.2"
 
 
 ##############基础方法区域###########
@@ -101,14 +101,14 @@ function updateSource(){
 		EOF
 		echo -e "${Info}源替换完毕,开始进行系统更新"
 		apt-get update
-	elif [ "${release}" = "centos" || "${release}" == "redhat" ];then
+	elif [[ "${release}" == "centos" || "${release}" == "redhat" ]]; then
 		echo -e "${Info}保存系统默认镜像源文件"
 		cp ${centos_soure} ${centos_soure}_${sys_date}
-		rm -y ${centos_source}
-		wget -O CentOS-Base.repo http://mirrors.aliyun.com/repo/Centos-7.repo
-		yum clean all
+		rm -f ${centos_source}
+		wget --no-check-certificate http://mirrors.aliyun.com/repo/Centos-7.repo -O /etc/yum.repos.d/CentOS-Base.repo
+		rm -rf /var/cache/yum/
 		yum makecache
-		yum update
+		yum -y update
 	fi
 }
 
@@ -119,26 +119,26 @@ function installDocker(){
 		apt-get install -y curl
 		apt-get install -y libapparmor1
 		apt-get install -y libltdl7
-		debhave=$(find / -name ${docker_version}*.deb)
+		debhave=$(find / -name "docker*${docker_version}*.deb")
 			if [ -z "${debhave}" ];then
 				echo -e "${Info}下载${docker_version}并进行安装"
-				wget --no-check-certificate https://download.docker.com/linux/debian/dists/jessie/pool/stable/amd64/${docker_version}~ce-0~debian_amd64.deb
-				dpkg -i $(find / -name ${docker_version}*.deb)
+				wget --no-check-certificate https://download.docker.com/linux/debian/dists/jessie/pool/stable/amd64/docker-ce_${docker_version}~ce-0~debian_amd64.deb
+				dpkg -i $(find / -name "docker*${docker_version}*.deb")
 			else
-				echo -e "${Info}${docker_version}版本已经存在，无需下载。现在开始安装"
+				echo -e "${Info}"${docker_version}"版本已经存在，无需下载。现在开始安装"
 				dpkg -i ${debhave}
 			fi
 	elif [[ "${release}" == "centos" || "${release}" == "redhat" ]]; then
 		yum install -y curl
-		yum install -y libapparmor1
-		yum install -y libltdl7
-		debhave=$(find / -name ${docker_version}*.rpm)
+		yum install -y container-selinux
+		yum install -y libtool-ltdl
+		debhave=$(find / -name "docker*${docker_version}*.rpm")
 			if [ -z "${debhave}" ];then
 				echo -e "${Info}下载${docker_version}版本并进行安装"
-				wget https://download.docker.com/linux/centos/7/x86_64/stable/Packages/${docker_version}.ce-1.el7.centos.x86_64.rpm
-				rpm -ivh $(find / -name ${docker_version}*.rpm)
+				wget https://download.docker.com/linux/centos/7/x86_64/stable/Packages/docker-ce-${docker_version}.ce-1.el7.centos.x86_64.rpm
+				rpm -ivh $(find / -name "docker*${docker_version}*.rpm")
 			else
-				echo -e "${Info}docker版本已经存在，无需下载。现在开始安装"
+				echo -e "${Info}${docker_version}版本已经存在，无需下载。现在开始安装"
 				rpm -ivh ${debhave}
 			fi
 	fi
@@ -152,6 +152,7 @@ function installEdo(){
 	echo -e -n "${Info}开始设置配置文件,请输入文档系统的下载地址(默认地址:192.168.1.112:5000):" &&  read downloadEdo
 	[[ -z ${downloadEdo} ]] && downloadEdo="192.168.1.112:5000"
 	echo -e -n "${Info}系统获取的镜像下载地址是:${downloadEdo},确认[Y/n]:" &&  read downloadEdo_tag
+	[[ -z ${downloadEdo_tag} ]] && downloadEdo_tag="y"
 	done
 	echo "{\"insecure-registries\":[\"${downloadEdo}\"]}">/etc/docker/daemon.json
 	systemctl restart docker
@@ -224,7 +225,7 @@ function edoDMS_ServiceOperation(){
 #################业务流程整合区###################
 #文档系统，7.0docker版本安装
 function edoDMS_docker_install(){
-[ ! -f "${tagfiles}" ] && functiontag=1 || functiontag=$(cat ${tagfiles})
+[ ! -f "${tagfiles}" ] && functiontag=1 && touch ${tagfiles} || functiontag=$(cat ${tagfiles})
 case ${functiontag} in
 	1)
 	stopFirewall
