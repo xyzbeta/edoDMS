@@ -5,7 +5,7 @@ export PATH
 #=================================================
 #	System Required: CentOS 7+/Debian 8+/Ubuntu 16+
 #	Description: System Operation Tools
-#	Version: 2.1.2
+#	Version: 2.1.3
 #	Author: XyzBeta
 #	Blog: https://www.xyzbeta.com
 #=================================================
@@ -18,12 +18,12 @@ Info="${Green_font_prefix}[信息]${Font_color_suffix}"
 Error="${Red_font_prefix}[错误]${Font_color_suffix}"
 Tip="${Yellow_font_prefix}[注意]${Font_color_suffix}"
 
-tagfiles="$(pwd)/edoDMS_runtag.txt"
-debian_source="/etc/apt/sources.list"
-centos_soure="/etc/yum.repos.d/CentOS-Base.repo"
+basedir=$(cd $(dirname $0); pwd -P)
 sys_date=$(date "+%Y%m%d_%H%M%S")
+frp_server="frp.xyzbeta.com"
+tagfiles="${basedir}/runTag.txt"
 docker_version="17.09.0"
-sh_version="2.1.2"
+sh_version="2.1.3"
 
 
 ##############基础方法区域###########
@@ -81,6 +81,7 @@ function updateSource(){
 	echo -e "${Info}修改${release}系统的镜像源为阿里云下载源"
 	if [[ "${release}" == "debian" || "${release}" == "ubuntu" ]]; then
 		echo -e "${Info}保存系统默认镜像源文件"
+		debian_source=$(find /etc/apt/ -name "sources.list")
 		cp ${debian_source} ${debian_source}_${sys_date}
 		cat /dev/null>${debian_source}
 		cat>${debian_source}<<-EOF
@@ -103,6 +104,7 @@ function updateSource(){
 		apt-get update
 	elif [[ "${release}" == "centos" || "${release}" == "redhat" ]]; then
 		echo -e "${Info}保存系统默认镜像源文件"
+		centos_soure=$(find /etc/yum.repos.d/ -name "CentOS-Base.repo")
 		cp ${centos_soure} ${centos_soure}_${sys_date}
 		rm -f ${centos_source}
 		wget --no-check-certificate http://mirrors.aliyun.com/repo/Centos-7.repo -O /etc/yum.repos.d/CentOS-Base.repo
@@ -147,23 +149,23 @@ function installDocker(){
 
 #安装易度系统
 function installEdo(){
-	until [[ "y" == ${downloadEdo_tag} || "Y" == ${downloadEdo_tag} ]]
-	do
-	echo -e -n "${Info}开始设置配置文件,请输入文档系统的下载地址(默认地址:192.168.1.112:5000):" &&  read downloadEdo
-	[[ -z ${downloadEdo} ]] && downloadEdo="192.168.1.112:5000"
-	echo -e -n "${Info}系统获取的镜像下载地址是:${downloadEdo},确认[Y/n]:" &&  read downloadEdo_tag
-	[[ -z ${downloadEdo_tag} ]] && downloadEdo_tag="y"
-	done
-	echo "{\"insecure-registries\":[\"${downloadEdo}\"]}">/etc/docker/daemon.json
+	echo "{\"insecure-registries\":[\"192.168.1.112:5000\"]}">/etc/docker/daemon.json
 	systemctl restart docker
 	echo -e "${Info}下载docker-compose......"
 	wget --no-check-certificate https://github.com/docker/compose/releases/download/1.18.0/docker-compose-`uname -s`-`uname -m` -O /usr/local/bin/docker-compose
 	chmod +x /usr/local/bin/docker-compose
 	mkdir /var/docker_data/
-	docker run --rm -v /var/docker_data/:/config ${downloadEdo}/compose && cd /var/docker_data/compose
+	docker run --rm -v /var/docker_data/:/config docker.easydo.cn:5000/compose && cd /var/docker_data/compose
+	sed -i "s/REGISTRY=.*/REGISTRY=docker.easydo.cn:5000/g" .env
+	until [[ "y" == ${downloadEdo_tag} || "Y" == ${downloadEdo_tag} ]]
+	do
+	echo -e -n "${Info}请输入系统配置文件下载地址:" &&  read downloadEdo
+	echo -e -n "${Info}确认[Y/n]:" &&  read downloadEdo_tag
+	[[ -z ${downloadEdo_tag} ]] && downloadEdo_tag="y"
+	done
+    #cp docker-compose.yml.template docker-compose.yml
+	wget --no-check-certificate ${downloadEdo} -O /var/docker_data/compose/docker-compose.yml
 	echo -e "${Info}开始安装系统"
-	sed -i "s/REGISTRY=.*/REGISTRY=${downloadEdo}/g" .env
-        cp docker-compose.yml.template docker-compose.yml
 	docker-compose up -d
 	if [[ ${?} == 0 ]]; then
 		echo -e "${Tip}系统所需启动服务较多,请耐心等待3分钟。"
@@ -200,6 +202,7 @@ function tagFunction(){
 	fi
 }
 
+#文档系统服务操作
 function edoDMS_ServiceOperation(){
 	cd /var/docker_data/compose/
 	if [[ $1 == "start" ]]; then
@@ -222,6 +225,36 @@ function edoDMS_ServiceOperation(){
 	fi
 }
 
+#辅助功能(远程维护)
+function remote_Help(){
+	if [[ "1" == $1 ]]; then
+		port=${RANDOM}
+		echo -e -n "${Info}认证口令(token):" && read token && echo
+		sed -i "s/^token\ =.*/token\ =\ ${token}/g" ${basedir}/frpc/frpc.ini
+		sed -i "s/^user\ =.*/user\ =\ ${port}/g" ${basedir}/frpc/frpc.ini
+		sed -i "s/^server_addr\ =.*/server_addr\ =\ ${frp_server}/g" ${basedir}/frpc/frpc.ini
+		sed -i "s/^remote_port\ =.*/remote_port\ =\ ${port}/g" ${basedir}/frpc/frpc.ini
+		cd ${basedir}/frpc/ && chmod +x frpc && nohup ./frpc -c ./frpc.ini &
+		sleep 5s
+		if [[ ! -z "$(ps -e | grep frpc | awk '{print $1}')" ]]; then
+			echo "------------远程维护启动成功----------"
+			echo && echo -e "${Green_font_prefix}SSH地址:${Font_color_suffix}${frp_server}  ${Green_font_prefix}SSH端口:${Font_color_suffix}:${port}" &&  echo
+		else
+			echo -e "${Tip}远程维护启动失败"
+		fi
+	elif [[ "2" == $1 ]]; then
+		pid=$(ps -e | grep frpc | awk '{print $1}')
+		if [[ -z ${pid} ]]; then
+			echo -e "${Info}服务未启动。"
+		else 
+			sed -i "s/^token\ =.*/token\ =/g" ${basedir}/frpc/frpc.ini
+			kill -9 ${pid}
+			echo -e "${Info}服务关闭成功"
+		fi
+	fi
+}
+
+#####################################################################################################
 #################业务流程整合区###################
 #文档系统，7.0docker版本安装
 function edoDMS_docker_install(){
@@ -246,6 +279,22 @@ case ${functiontag} in
 esac
 }
 
+#辅助工具功能整合
+function Help_Tools(){
+	echo -e "
+	${Green_font_prefix}1.${Font_color_suffix} 开启远程支持
+	${Green_font_prefix}2.${Font_color_suffix} 关闭远程支持"
+	echo && read -p "请输入数字[1-2]:" var
+	case ${var} in
+	1)
+	remote_Help 1
+	;;
+	2)
+	remote_Help 2
+	;;
+	esac	
+}
+
 ###################脚本功能执行入口###############
 check_sys
 check_root
@@ -263,9 +312,10 @@ echo && echo -e "edoDMS自动化运维管理脚本 ${Green_font_prefix}[${sh_ver
  ${Green_font_prefix}6.${Font_color_suffix} 查看 edoDMS 运行状态
 ————————————
  ${Green_font_prefix}7.${Font_color_suffix} 升级脚本
+ ${Green_font_prefix}8.${Font_color_suffix} 辅助工具
  ${Green_font_prefix}0.${Font_color_suffix} 退出
  "
-echo && read -p "请输入数字 [0-7]：" num && echo
+echo && read -p "请输入数字 [0-8]：" num && echo
 case "${num}" in
 	0)
 	exit 0
@@ -291,8 +341,11 @@ case "${num}" in
 	7)
 	Update_Sh
 	;;
+	8)
+	Help_Tools
+	;;
 	*)
-	echo -e "${Error} 请输入正确的数字 [0-7]"
+	echo -e "${Error} 请输入正确的数字 [0-8]"
 	;;
 esac
 done
