@@ -5,7 +5,7 @@ export PATH
 #=================================================
 #	System Required: CentOS 7+/Debian 8+/Ubuntu 16+
 #	Description: System Operation Tools
-#	Version: 2.1.3
+#	Version: 2.1.4
 #	Author: XyzBeta
 #	Blog: https://www.xyzbeta.com
 #=================================================
@@ -107,7 +107,7 @@ function updateSource(){
 		centos_soure=$(find /etc/yum.repos.d/ -name "CentOS-Base.repo")
 		cp ${centos_soure} ${centos_soure}_${sys_date}
 		rm -f ${centos_source}
-		wget --no-check-certificate http://mirrors.aliyun.com/repo/Centos-7.repo -O /etc/yum.repos.d/CentOS-Base.repo
+		wget --no-check-certificate https://mirrors.163.com/.help/CentOS7-Base-163.repo -O /etc/yum.repos.d/CentOS-Base.repo
 		rm -rf /var/cache/yum/
 		yum makecache
 		yum -y update
@@ -134,6 +134,7 @@ function installDocker(){
 		yum install -y curl
 		yum install -y container-selinux
 		yum install -y libtool-ltdl
+		yum install -y libseccomp
 		debhave=$(find / -name "docker*${docker_version}*.rpm")
 			if [ -z "${debhave}" ];then
 				echo -e "${Info}下载${docker_version}版本并进行安装"
