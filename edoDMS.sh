@@ -19,6 +19,7 @@ Error="${Red_font_prefix}[错误]${Font_color_suffix}"
 Tip="${Yellow_font_prefix}[注意]${Font_color_suffix}"
 
 basedir=$(cd $(dirname $0); pwd -P)
+addr=$(ifconfig -a|grep inet|grep -v 127.0.0.1|grep -v inet6|awk '{print $2}'|tr -d "addr:")
 sys_date=$(date "+%Y%m%d_%H%M%S")
 frp_server="frp.xyzbeta.com"
 tagfiles="${basedir}/runTag.txt"
@@ -172,8 +173,8 @@ function installEdo(){
 		echo -e "${Tip}系统所需启动服务较多,请耐心等待3分钟。"
 		sleep 3m
 		echo -e "############系统安装成功#######################
-#${Info}访问地址:http://ip:80
-#${Info}运维控制台:http://ip:9099
+#${Info}访问地址:http://${addr}
+#${Info}运维控制台:http://${addr}:9099
 #${Info}初始账户/密码:admin/admin
 #${Info}激活与技术服务:4008-320-399
 #############################################"
