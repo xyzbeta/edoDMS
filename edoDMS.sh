@@ -5,7 +5,7 @@ export PATH
 #=================================================
 #	System Required: CentOS 7+/Debian 8+/Ubuntu 16+
 #	Description: System Operation Tools
-#	Version: 2.1.4
+#	Version: 2.1.5
 #	Author: XyzBeta
 #	Blog: https://www.xyzbeta.com
 #=================================================
@@ -24,7 +24,7 @@ sys_date=$(date "+%Y%m%d_%H%M%S")
 frp_server="frp.xyzbeta.com"
 tagfiles="${basedir}/runTag.txt"
 docker_version="17.09.0"
-sh_version="2.1.3"
+sh_version="2.1.5"
 
 
 ##############基础方法区域###########
@@ -187,6 +187,11 @@ function stopFirewall(){
 	if [[ "${release}" == "centos" ]]; then
 		echo -e  "${Tip}防止${release}系统防火墙拦截系统的正常访问,安装时会关闭防火墙,待安装后测试访问正常后,请打开防火墙!"
 		systemctl stop firewalld.service
+		systemctl disable firewalld.service
+		sleep 3
+		echo -e "${Tip}安装文档系统需要关闭${release}的SeLinux,避免服务无法启动"
+		setenforce 0
+		sed -i "s/SELINUX=.*/SELINUX=disabled/g" /etc/selinux/config
 		sleep 4
 	elif [[ "${release}" == "ubantu"  ]]; then
 		 echo -e  "${Tip}防止${release}系统防火墙拦截系统的正常访问,安装时会关闭防火墙,待安装后测试访问正常后,请打开防火墙!"
