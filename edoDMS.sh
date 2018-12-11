@@ -192,7 +192,7 @@ function edoDMS_uninstall(){
 		if [[ "y" == ${rm_data} ]]; then
 			mv /var/docker_backup /var/docker_backup_${sys_date}  && mv /var/docker_data /var/docker_data_${sys_date} && mv /var/docker_files /var/docker_files_${sys_date}
 		fi
-	echo -e "{Info}系统卸载成功,我们会努力变得更好,期待你的再次使用。"
+	echo -e "${Info}系统卸载成功,我们会努力变得更好,期待你的再次使用。"
 	else
 		echo -e "${Info}输入验证不通过,结束操作."
 	fi
