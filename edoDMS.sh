@@ -5,7 +5,7 @@ export PATH
 #=================================================
 #	System Required: CentOS 7+/Debian 8+/Ubuntu 16+
 #	Description: System Operation Tools
-#	Version: 2.1.5
+#	Version: 2.2
 #	Author: XyzBeta
 #	Blog: https://www.xyzbeta.com
 #=================================================
@@ -24,7 +24,7 @@ sys_date=$(date "+%Y%m%d_%H%M%S")
 frp_server="frp.xyzbeta.com"
 tagfiles="${basedir}/runTag.txt"
 docker_version="17.09.0"
-sh_version="2.1.5"
+sh_version="2.2"
 
 
 ##############基础方法区域###########
@@ -182,6 +182,22 @@ function installEdo(){
 	rm -f ${tagfiles}
 }
 
+#卸载易度系统
+function edoDMS_uninstall(){
+	echo -e "${Info}请谨慎操作!卸载系统会直接删除所有数据和镜像且无法恢复."
+	echo -e -n "${Info}确认删除,请输入(www.everydo.com):" && read uninstall_yes
+	if [[ "www.everydo.com" == ${uninstall_yes} ]]; then
+		edoDMS_ServiceOperation stop && docker rmi -f $(docker images -q) && systemctl stop docker && rm -rf /var/lib/docker
+		echo && echo -e -n "${Info}镜像删除成功,是否删除数据库文件和系统源文件[y/n]:" && read rm_data
+		if [[ "y" == ${rm_data} ]]; then
+			mv /var/docker_backup /var/docker_backup_${sys_date}  && mv /var/docker_data /var/docker_data_${sys_date} && mv /var/docker_files /var/docker_files_${sys_date}
+		fi
+	echo -e "{Info}系统卸载成功,我们会努力变得更好,期待你的再次使用。"
+	else
+		echo -e "${Info}输入验证不通过,结束操作."
+	fi
+}
+
 #关闭系统防火墙
 function stopFirewall(){
 	if [[ "${release}" == "centos" ]]; then
@@ -331,7 +347,7 @@ case "${num}" in
 	edoDMS_docker_install
 	;;
 	2)
-	echo -e "${Tip}该功能暂未启用"
+	edoDMS_uninstall
 	;;
 	3)
 	edoDMS_ServiceOperation start
