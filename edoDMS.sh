@@ -155,7 +155,7 @@ function installEdo(){
 	systemctl restart docker
 	echo -e "${Info}下载docker-compose......"
 	wget --no-check-certificate https://get.daocloud.io/docker/compose/releases/download/1.18.0/docker-compose-`uname -s`-`uname -m` -O /usr/bin/docker-compose
-	chmod +x /usr/local/bin/docker-compose
+	chmod +x /usr/bin/docker-compose
 	mkdir /var/docker_data/
 	docker run --rm -v /var/docker_data/:/config docker.easydo.cn:5000/compose && cd /var/docker_data/compose
 	sed -i "s/REGISTRY=.*/REGISTRY=docker.easydo.cn:5000/g" .env
